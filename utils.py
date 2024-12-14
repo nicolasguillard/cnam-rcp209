@@ -2,9 +2,14 @@ import math
 from typing import Tuple
 import torch.nn as nn
 
+__version__ = "1.0.2"
 
 def get_conv_params(conv: nn.Conv2d) -> dict:
-    """ """
+    """
+    (FR) Récupération des principaux paramètres d'une instance Conv2d sous forme
+    de dictionnaire compatible avec les noms officiels des arguments pour la
+    création d'une instance.
+    """
     get_keys = [
         "in_channels", "out_channels", "kernel_size", "stride", "padding", "padding_mode", "dilation"
         ]
@@ -14,8 +19,12 @@ def get_conv_params(conv: nn.Conv2d) -> dict:
     return params
 
 
-def get_maxpool_params(conv: nn.Conv2d) -> dict:
-    """ """
+def get_maxpool_params(conv: nn.MaxPool2d) -> dict:
+    """ 
+    (FR) Récupération des principaux paramètres d'une instance MaxPool2d sous forme
+    de dictionnaire compatible avec les noms officiels des arguments pour la
+    création d'une instance.
+    """
     get_keys = [
         "kernel_size", "stride", "padding", "dilation"
         ]
@@ -32,7 +41,10 @@ def conv2d_output_size(
         dilation_size: int|Tuple[int, int]=1,
         pooling_size: int|Tuple[int, int]=1
         ):
-    """ """
+    """
+    (FR) Calcul des dimensions de la sortie d'un conv2d
+    d'après les équations fournies dans https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
+    """
     _to_tuple = lambda v: (v, v)
     
     if type(input_size) == int:
@@ -70,7 +82,10 @@ def maxpool2d_output_size(
         stride_size: int|Tuple[int, int]=1,
         dilation_size: int|Tuple[int, int]=1,
         ):
-    """ """
+    """
+    (FR) Calcul des dimensions de la sortie d'un maxpool2d
+        d'après les équations fournies dans https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html
+    """
     _to_tuple = lambda v: (v, v)
 
     if type(input_size) == int:
@@ -99,6 +114,10 @@ def maxpool2d_output_size(
 
     
 def get_receptive_field(pos, k, s, p):
+    """
+    (FR) Retoure les coordonnées (row, col) des coins "min-min" et "max-max"
+    du champ réceptif ...
+    """
     _to_tuple = lambda v: (v, v)
     if type(k) == int:
         k = _to_tuple(k)
@@ -111,10 +130,18 @@ def get_receptive_field(pos, k, s, p):
     return (row, column), (row+k[1], column+k[0])
 
 def get_receptive_field_conv2d(pos, k, s, p):
+    """
+    (FR) Retoure les coordonnées (row, col) des coins "min-min" et "max-max"
+    du champ réceptif ...
+    """
     return get_receptive_field(pos, k, s, p)
 
 
-def get_receptive_field_pool2d(pos, k, s, p): 
+def get_receptive_field_pool2d(pos, k, s, p):
+    """
+    (FR) Retoure les coordonnées (row, col) des coins "min-min" et "max-max"
+    du champ réceptif ...
+    """
     return get_receptive_field(pos, k, s, p)
 
 
@@ -217,3 +244,6 @@ if __name__ == "__main__":
         print("\t ** All ok **")
 
     testing_conv2d_output_size()
+
+    ##TODO Testing get_receptive_field_conv2d
+    ##TODO Testing get_receptive_field_pool2d
