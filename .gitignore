@@ -1,1 +1,3 @@
 *.pt
+deconv_sessions/
+__pycache__
