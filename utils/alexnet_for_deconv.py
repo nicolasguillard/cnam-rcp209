@@ -83,7 +83,6 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
         else:
             return x
     
-
     def get_max_activations(self,
                             top_n: int = 1,
                             idx_layer_set: int|List[int] = -1  

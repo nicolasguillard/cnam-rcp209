@@ -1,6 +1,6 @@
 from .alexnet_for_deconv import *
 from .clean_map import *
-from .deconvnet import *
+from .deconvolution import *
 from .miscellaneous import *
 from .topk import *
 from .utils_cnn import *

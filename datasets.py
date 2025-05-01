@@ -5,9 +5,10 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms as T
 from torchvision.io import decode_image
+from PIL import Image
 from imagenet_labels import imagenet1K_codes_to_labels, imagenet1K_labels_to_names
 
-__version__ = "1.2.1"
+__version__ = "1.3.1"
 
 
 # > Attention : utilisation d'un répertoire de données en dehors de l'environnement du notebook !
@@ -127,7 +128,6 @@ class CustomImageDataset(Dataset):
     def use_decode_image(cls) -> bool:
         return True
 
-
     def __init__(
             self,
             img_dir: str,
@@ -138,6 +138,7 @@ class CustomImageDataset(Dataset):
             only_label_idx: bool = True,
             get_label_data: Callable = None,
             max_length_padding_filename: int = 40,
+            read_image_with: str = "torchvision"
             ) -> None:
         #self.img_labels = pd.read_csv(annotations_file)
         self.img_dir = img_dir
@@ -150,11 +151,10 @@ class CustomImageDataset(Dataset):
         self.only_label_idx = only_label_idx
         self.get_label_data = get_label_data
         self.max_length_padding_filename = max_length_padding_filename
-
+        self.read_image_with = read_image_with
 
     def __len__(self) -> int:
         return len(self.files)
-
 
     def __getitem__(self, idx: int) \
         ->  Tuple[torch.Tensor, int]|\
@@ -184,6 +184,24 @@ class CustomImageDataset(Dataset):
     def get_filenames(self, list_idx: List[int], with_path: bool = False) -> List[str]:
         return [self.files[i] for i in list_idx]
 
+    def _get_image_with_torchvision(self, img_path: str, to_rgb: bool = True) -> torch.Tensor:
+        image = decode_image(img_path)
+        # If the image is not a RGB but a 1 channel grey
+        if to_rgb and image.size(0) == 1:
+            #print(self.files[idx])
+            #Create 3 same channels
+            image = image.repeat(3, 1, 1)
+            #print(image.size())
+        
+        return image
+    
+    def _get_image_with_pil(self, img_path: str, to_rgb: bool = True) -> torch.Tensor:
+        image = Image.open(img_path)
+        if to_rgb and len(image.getbands()) == 1:
+            image_mono = image.convert("L")
+            image = Image.merge("RGB", (image_mono, image_mono, image_mono))
+        
+        return image
 
     def get_image(self, idx: int = None, name: str = "", to_rgb: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
         assert name or idx != None, "No name or idx provided"
@@ -194,14 +212,11 @@ class CustomImageDataset(Dataset):
 
         name = name if name else self.files[idx]
         img_path = os.path.join(self.img_dir, name)
-        image = decode_image(img_path)
-
-        # If the image is not a RGB but a 1 channel grey
-        if to_rgb and image.size(0) == 1:
-            #print(self.files[idx])
-            #Create 3 same channels
-            image = image.repeat(3, 1, 1)
-            #print(image.size())
+        
+        if self.read_image_with.lower() == "torchvision":
+            image = self._get_image_with_torchvision(img_path, to_rgb=to_rgb)
+        elif self.read_image_with.lower() == "pil":
+            image = self._get_image_with_pil(img_path, to_rgb=to_rgb)
 
         image_trfm = self.transform(image) if self.transform else None
 
