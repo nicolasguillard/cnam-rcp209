@@ -1,10 +1,10 @@
 # cnam-rcp209
 RCP209 Project - CNAM
 
-> FR : Réplication des travaux de l'article ["Visualizing and Understanding Convolutional Networks" - (Zeiler and al.) - 2013](http://arxiv.org/abs/1311.2901) \[1]
+> FR : Réplication de la méthode de visualisation des représentations internes présentée de l'article ["Visualizing and Understanding Convolutional Networks" - (Zeiler and al.) - 2013](http://arxiv.org/abs/1311.2901) \[1]
 > **Travail en cours**
 
-> EN : Replication of the article ["Visualizing and Understanding Convolutional Networks" - (Zeiler and al.) - 2013](http://arxiv.org/abs/1311.2901) \[1]
+> EN : Replication of the method for visualising internal representations presented in the article ["Visualizing and Understanding Convolutional Networks" - (Zeiler and al.) - 2013](http://arxiv.org/abs/1311.2901) \[1]
 > **Work in progress**
 
 
