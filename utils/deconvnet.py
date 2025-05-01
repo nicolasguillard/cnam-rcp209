@@ -53,7 +53,7 @@ def perform_deconvolution(
             )
 
         if verbose:
-            print(f"\t\t> output.size", output.size(), output.min().item(), output.max().item())
+            print(f"\t\t> output.size :{output.size()} | min : {output.min().item():.3f} | max : {output.max().item()}")
 
     return output
 
@@ -104,10 +104,13 @@ def deconvolution(
         f"i should be in [-{len(cnn_features)}; {len(cnn_features)}["
     
     # Generate feature maps and switch indices
-    output, switch_indices = cnn_model.forward_for_deconv(x, idx_layer, verbose)
+    output, switch_indices = cnn_model.forward_for_deconv(
+        x, idx_layer, return_switch_indices=True, verbose=verbose
+        )
+    
     if verbose:
-        print("forwarded output.size", output.size(), "len(switch_indices)", len(switch_indices))
-        print(output.min().item(), output.max().item())
+        print(f"forwarded output size {output.size()} | switch indices : {len(switch_indices)}", end="")
+        print(f" | min : {output.min().item()} •| max : {output.max().item()}")
 
     # Clean idx_map feature maps
     if clean_feature_map:

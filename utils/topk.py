@@ -39,6 +39,9 @@ class TopK():
 
     def __len__(self) -> int:
         return len(self.top)
+
+    def __iter__(self) -> Tuple[float, Any]:
+        return zip(self.top, self.data)
     
     def __getitem__(self, idx: int) -> Tuple[float, Any]:
         if idx < 0:

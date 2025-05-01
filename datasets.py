@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Tuple, Callable
+from typing import Tuple, Callable, List
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms as T
@@ -78,7 +78,6 @@ def get_label_data_from_filename(filename: str, datapath: str) -> Tuple[str, int
     Returns:
         str|Tuple[str, int, str]: (code, label, name)
     """
-
     label_code = get_label_code_from_filename(filename, datapath)
     label_idx = imagenet1K_codes_to_labels.get(label_code, None)
     label_name = imagenet1K_labels_to_names.get(label_idx, None)
@@ -158,11 +157,13 @@ class CustomImageDataset(Dataset):
 
 
     def __getitem__(self, idx: int) \
-        -> Tuple[torch.Tensor, int]|Tuple[torch.Tensor, int, str, int]|Tuple[torch.Tensor, torch.Tensor, int, str, int]:
+        ->  Tuple[torch.Tensor, int]|\
+            Tuple[torch.Tensor, int, str, int]|\
+            Tuple[torch.Tensor, torch.Tensor, int, str, int]:
         if idx >= len(self):
             return None, None, None
         
-        image, image_trfm = self.get_image(self.files[idx], to_rgb=self.to_rgb)
+        image, image_trfm = self.get_image(idx=idx, to_rgb=self.to_rgb)
         if self.get_label_data:
             data = self.get_label_data(self.files[idx])
             label_idx = data[1]
@@ -180,9 +181,18 @@ class CustomImageDataset(Dataset):
             return image, image_trfm, label_idx, label_code, idx
     
 
-    def get_image(self, name: str, to_rgb: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
-        assert name in self.files, f"{name} unknown"
+    def get_filenames(self, list_idx: List[int], with_path: bool = False) -> List[str]:
+        return [self.files[i] for i in list_idx]
 
+
+    def get_image(self, idx: int = None, name: str = "", to_rgb: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
+        assert name or idx != None, "No name or idx provided"
+        assert name == "" or name in self.files, f"{name} unknown in this set"
+        if idx != None and idx < 0:
+            idx += len(self)
+            assert idx < len(self), f"idx {idx} out of range [-{len(self)}, {len(self)}["
+
+        name = name if name else self.files[idx]
         img_path = os.path.join(self.img_dir, name)
         image = decode_image(img_path)
 

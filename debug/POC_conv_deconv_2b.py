@@ -24,7 +24,7 @@ print(torchvision.__version__)
 
 # %%
 from datasets import DATASET_0, DATASET_2
-from utils import display_image_tensor as display_image_tensor_, display_pictures_grid, to_0_255, unnormalize
+from utils import display_image_tensor as display_image_tensor_, display_images_tensor_grid, to_0_255, unnormalize
 from utils import alexnetfordeconv, clean_feature_maps, deconvolution, get_output_sizes, get_receptive_field_in_pixel_space
 
 
@@ -128,7 +128,7 @@ model_alexnet.eval()
 # %%
 output_features = model_alexnet.features(batch_input).detach()
 if display:
-    display_pictures_grid(
+    display_images_tensor_grid(
         output_features.squeeze(dim=0).reshape(
             (output_features.size(1), 1, output_features.size(2), output_features.size(3))
             # .squeeze pour supprimer la partie "batch"
@@ -158,7 +158,7 @@ model_alexnet_deconv.eval()
 output_features_deconv = model_alexnet_deconv.features(batch_input).detach()
 print("Dimensions de la sortie de la déconvolution : ", output_features_deconv.size())
 if display:
-    display_pictures_grid(
+    display_images_tensor_grid(
         output_features_deconv.squeeze(dim=0).reshape(
             (output_features_deconv.size(1), 1, output_features_deconv.size(2), output_features_deconv.size(3))
             # .squeeze pour supprimer la partie "batch"
@@ -183,7 +183,7 @@ print("OK !!!")
 output_features_deconv, switches_indices = model_alexnet_deconv(batch_input, idx_layer=-1)
 output_features_deconv = output_features_deconv.detach()
 if display:
-    display_pictures_grid(
+    display_images_tensor_grid(
         output_features_deconv.squeeze(dim=0).reshape(
             (output_features_deconv.size(1), 1, output_features_deconv.size(2), output_features_deconv.size(3))
             # .squeeze pour supprimer la partie "batch"
@@ -245,7 +245,7 @@ print("max :", cleaned_feature_maps.max())
 
 # %%
 if display:
-    display_pictures_grid(
+    display_images_tensor_grid(
         cleaned_feature_maps.squeeze(dim=0).reshape(
             (cleaned_feature_maps.size(1), 1, cleaned_feature_maps.size(2), cleaned_feature_maps.size(3))
             # .squeeze pour supprimer la partie "batch"
