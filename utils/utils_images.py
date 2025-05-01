@@ -98,33 +98,42 @@ def display_images_tensor_grid(
     #plt.subplots_adjust(hspace=1)
     plt.show()
 
+
 def display_images_list_grid(
-        images: List[torch.Tensor],
-        per_rows: int,
-        titles: List[str] = None,
-        suptitle: str = "",
-        figsize: Tuple[int, int] = (12, 12)
-        ) -> None:
-    fig = plt.figure(figsize=figsize, layout='constrained')
-    plt.rcParams['axes.titley'] = 1.0
-    plt.rcParams['axes.titlepad'] = 1.2
-    rows = 1
-    for r in range(rows):
-        for c in range(per_rows):
-            i = r * per_rows + c
-            img = images[i]
-            ax = fig.add_subplot(rows, per_rows, i+1, xticks = [], yticks = [])
-            if titles:
-                ax.set_title(titles[i])
-            if img.size(0) == 1:
-                ax.imshow(img.numpy().transpose(1, 2, 0), cmap='gray')
-            else:
-                ax.imshow(img.numpy().transpose(1, 2, 0))
-    if suptitle:
-        plt.suptitle(suptitle)
+    images: List[torch.Tensor],
+    per_rows: int,
+    image_titles: List[str] = None,
+    title: str = "",
+    figsize: Tuple[int, int] = (12, 12),
+    no_plt_show: bool = False,
+    ) -> None:
+    rows = len(images) // per_rows
+    fig, axs = plt.subplots(rows, per_rows, figsize=figsize, layout='constrained')
+    for i, image in enumerate(images):
+        ax = axs if len(images) == 1 else axs[i] if rows == 1 else axs[i // per_rows, i % per_rows]
+        ax.set_axis_off()
+        if image_titles:
+            ax.set_title(image_titles[i])
+        if image.size(0) == 1:
+            ax.imshow(image.numpy().transpose(1, 2, 0), cmap='gray')
+        else:
+            ax.imshow(image.numpy().transpose(1, 2, 0))
+    if title:
+        fig.suptitle(title, fontsize=8.0, y=0.85, va="baseline")
+    
+    if not no_plt_show:
+        #plt.tight_layout()
+        #plt.subplots_adjust(hspace=1)
+        plt.show()
+    else:
+        return fig, axs
+
+
+def show_display_image_tensor_grid():
     #plt.tight_layout()
     #plt.subplots_adjust(hspace=1)
     plt.show()
+
 
 def show_image_tensor(
         img_tensor: torch.Tensor,

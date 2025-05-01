@@ -73,14 +73,13 @@ class Deconvnet(nn.Module):
         x: input tensor
         switch_indices: list of tuples (index, indices) where index is the index of the layer and indices are the indices to be switched
         """
-        print("*************************")
-
         if from_idx_layer < 0:
             from_idx_layer += len(self.deconv_model)
         assert from_idx_layer < len(self.deconv_model), f"from_idx_layer must be in range [-{len(self.deconv_model)}, {len(self.deconv_model)}["
 
         from_idx_layer = len(self.deconv_model) - 1 - from_idx_layer
-        print( f"from_idx_layer : {from_idx_layer}   | len(self.deconv_model) : {len(self.deconv_model)}")
+        if verbose:
+                print( f"from_idx_layer : {from_idx_layer}   | len(self.deconv_model) : {len(self.deconv_model)}")
         for i, module in enumerate(self.deconv_model):
             if i < from_idx_layer:
                 continue

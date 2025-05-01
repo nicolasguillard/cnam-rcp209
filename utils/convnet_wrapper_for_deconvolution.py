@@ -17,7 +17,7 @@ class ConvnetWrapperForDeconvolution():
         """
         Move all modules in self.convnet_layers to the specified device
         """
-        print(f"Moving wrapped model to {device}")
+        #print(f"Moving wrapped model to {device}")
 
         self.wrapped_model.to(device)
         self.convnet_features.to(device)

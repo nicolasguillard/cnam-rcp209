@@ -173,12 +173,14 @@ class CustomImageDataset(Dataset):
         
         if self.dataset_mode:
             if self.only_label_idx:
-                return image_trfm, label_idx
+                # retourne l'image transformée et l'indice de la classe
+                return image_trfm, label_idx 
             else:
-                return image_trfm, label_idx, label_code, idx
+                # retourn l'image transformée, l'indice de la classe, le code de la classe et l'indice du fichier
+                return image_trfm, label_idx, label_code, idx  
         else:
+            # retourn l'image initiale, l'image transformée, l'indice de la classe, le code de la classe et l'indice du fichier 
             return image, image_trfm, label_idx, label_code, idx
-    
 
     def get_filenames(self, list_idx: List[int], with_path: bool = False) -> List[str]:
         return [self.files[i] for i in list_idx]
@@ -187,10 +189,8 @@ class CustomImageDataset(Dataset):
         image = decode_image(img_path)
         # If the image is not a RGB but a 1 channel grey
         if to_rgb and image.size(0) == 1:
-            #print(self.files[idx])
             #Create 3 same channels
             image = image.repeat(3, 1, 1)
-            #print(image.size())
         
         return image
     
