@@ -22,21 +22,29 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
         for m in self.features:
             m.to(device)
     
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the features part of the model
+        """
+        x = self.features(x)
+        return x
 
     def forward_for_deconv(self, 
                 x: torch.Tensor,
                 idx_layer: Optional[int] = -1,
                 verbose: bool = False
-                ) -> torch.Tensor | Tuple[torch.Tensor, List[Tuple[int, torch.Tensor]]]:
+                ) -> Tuple[torch.Tensor, List[Tuple[int, torch.Tensor]]]:
         """
         If idx_layer provided, return the forward result AND the collection of (#i, switch indices) for each applyed MaxPool2d in the part "features" of the model
 
         Args:
             x (tensor): input for forward
             idx_layer (int, optional): indice of the module from which to get the ouput, if set
+            verbose (bool): if True, print debug messages
 
         Returns:
-            
+            x (tensor): output of the model
+            switch_indices (list): list of tuples (i, indices) for each MaxPool2d module in self.features
         """
         if idx_layer < 0:
             idx_layer += len(self.features)
@@ -65,15 +73,18 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
         self.set_return_indices(False) # Restore default state
         return x, switch_indices
     
+
     def get_max_activations(self,
                             top_n: int = 1,
                             idx_layer_set: int|List[int] = -1 
                             ) -> Dict[int, Tuple[torch.tensor, torch.tensor]]:
         """
         Get the top_n activations of each layer in idx_layer_set
+
         Args:
             top_n (int): number of max activations to get
             idx_layer_set (int|List[int]): layer index or list of layer indices to get the activations from
+
         Returns:
             activations (Dict[int, Tuple[torch.tensor, torch.tensor]]): dictionary of activations for each layer in idx_layer_set
                 key: layer index
@@ -81,7 +92,7 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
         """
         if type(idx_layer_set) == int:
             idx_layer_set = [idx_layer_set]
-            
+
         idx_layer_set_ = {}
         for i, idx in enumerate(idx_layer_set):
             idx_ = idx + len(self.features) if idx < 0 else idx
@@ -100,7 +111,6 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
         """
         Return activation values at coord_activations (c, h, w) of each item of batch
         """
-
         # Check coord_activations layer idx
         probed_layers = {}
         for i, idx in enumerate(coord_activations.keys()):
@@ -146,8 +156,7 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
     def set_return_indices(self, return_indices: bool) -> None:
         """
         Change the return_indices attribut of each Pool2d in self.features module group (CNN part)
-        """
-        
+        """     
         self.return_indices = return_indices
         for m in self.features:
             if isinstance(m, nn.MaxPool2d):

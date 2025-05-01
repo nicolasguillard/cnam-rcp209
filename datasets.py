@@ -27,7 +27,7 @@ DATASET_0 = {
 }
 
 DATASET_1 = {  # 50K images for evaluation
-    "name": "imagenet-val-images",
+    "name": "imagenet_val_images (50K images)",
     "path": "/Users/me/Documents/Work/Dev/_data/imagenet_val_images",
     "mounted_path": "/Volumes/me/Documents/Work/Dev/_data/imagenet_val_images",
     "size": 50000,
@@ -37,7 +37,7 @@ DATASET_1 = {  # 50K images for evaluation
 }
 
 DATASET_2 = { # 1K images - 1K classes catalog label code <-> label name
-    "name": "imagenet-sample-images",
+    "name": "imagenet-sample-images (1K images)",
     "path": "/Users/me/Documents/Work/Dev/_data/imagenet-sample-images-master",
     "mounted_path": "/Volumes/me/Documents/Work/Dev/_data/imagenet-sample-images-master",
     "size": 1000,
