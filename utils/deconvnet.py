@@ -2,9 +2,11 @@ from typing import List, Tuple, Optional
 import torch
 import torch.nn as nn
 
-from.convnet_wrapper_for_deconvolution import ConvnetWrapperForDeconvolution
+from .convnet_wrapper_for_deconvolution import ConvnetWrapperForDeconvolution
 from .utils_deconv import make_coherent_before_max_unpool2d
 from .clean_map import clean_feature_maps
+
+__version__ = "1.1.2"
 
 class Sub(nn.Module):
     def __init__(self, tensor_to_sub: torch.Tensor) -> None:

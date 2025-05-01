@@ -3,9 +3,12 @@ from typing import List, Optional, Tuple
 import torch
 import torch.nn as nn
 import torchinfo
-from .miscellaneous import _pair
 
-__version__ = "1.2.0"
+
+__version__ = "1.2.1"
+
+# Also used in PyTorch codes
+_pair = lambda v: (v, v)
 
 #################
 ### CNN utilities

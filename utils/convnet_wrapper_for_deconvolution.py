@@ -1,10 +1,8 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
-import torchvision
-from .miscellaneous import _overwrite_named_param
 
-__version__ = "1.0.0"
+__version__ = "1.1.1"
 
 class ConvnetWrapperForDeconvolution():
     def __init__(self, model_to_wrap: nn.Module, features: nn.Module) -> None:
@@ -94,7 +92,8 @@ class ConvnetWrapperForDeconvolution():
         else:
             return x
 
-
+    """""
+    ### TODO : Test this method
     def get_topk_activations(self,
                              x: torch.Tensor,
                              idx_probed_layers: List[int],
@@ -103,10 +102,10 @@ class ConvnetWrapperForDeconvolution():
                              device: str = "cpu",
                              verbose: bool = False
                              ) -> Dict[int, List[torch.Tensor]]:
-        """
+        #\"""
         Return topk activations at idx_probed_layers of each item of batch
         Assuming x : (batch, chanel, height, width)
-        """
+        #\"""
 
         assert max_mode in ["layer", "channel"], f"max_mode should be 'layer' or 'channel', not {max_mode}"
 
@@ -170,7 +169,7 @@ class ConvnetWrapperForDeconvolution():
             verbose=verbose
             )
         return activations
-    
+    """
 
     def get_activations(self, 
                 x: torch.Tensor,

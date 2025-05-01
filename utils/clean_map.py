@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 import torch
 from .utils_pytorch import partial_resize_like, get_max_by_dim, get_edge_occurrence_indices, get_first_occurrence_indices, get_last_occurrence_indices
 
-__version__ = "1.5.0"
+__version__ = "1.5.2"
 
 
 def cleaning_tensor(
