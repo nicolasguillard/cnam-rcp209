@@ -6,7 +6,7 @@ from .clean_map import clean_feature_maps
 from .utils_deconv import make_coherent_before_max_unpool2d
 from .convnet_wrapper_for_deconvolution import ConvnetWrapperForDeconvolution
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 def perform_deconvolution(
         output: torch.Tensor,
@@ -15,10 +15,11 @@ def perform_deconvolution(
         switch_indices: List[Tuple[int, torch.Tensor]],
         flip_kernels: bool = False,
         use_bias: bool = False,
+        deconv_device: str = "cpu",
         verbose: bool = False,
         ) -> torch.Tensor:
     """
-    
+    Quite naive deconvolution process.
     """
     for i, module in zip(range(idx_layer, -1, -1), reversed(convnet_features[:idx_layer+1])):
         if verbose:
@@ -37,13 +38,26 @@ def perform_deconvolution(
         elif isinstance(module, nn.ReLU):
             output = nn.functional.relu(output)
         elif isinstance(module, nn.Conv2d):
-            weight = torch.flip(module.weight, [2, 3]) if flip_kernels else module.weight
-            if use_bias and module.bias != None:
-                if verbose:
-                    print("\t using bias")
-                    #print("bias", output.size(), "module.bias", module.bias.size())
-                bias = module.bias.unsqueeze(dim=0).unsqueeze(dim=0).reshape(module.bias.size(0), 1, 1).unsqueeze(dim=0)
-                output -= bias
+            if flip_kernels:
+                weight = torch.flip(module.weight.clone().to(deconv_device), [2, 3])
+                print("\t> flip kernels", module.weight.size(), weight.size())
+                #if verbose:
+                    #print(module.weight)
+                    #print(weight)
+                    #print(torch.equal(module.weight, weight))
+            else:
+                weight = module.weight.clone().to(deconv_device)
+            if use_bias:
+                print(f"\t> using bias if available: {(module.bias != None)}")
+                if module.bias != None:
+                    if verbose:
+                        print("\tbias :", output.size(), "\tmodule bias size:", module.bias.size())
+                    bias = module.bias.clone().to(deconv_device).unsqueeze(dim=0).unsqueeze(dim=0).reshape(module.bias.size(0), 1, 1)
+                    if len(output.size()) == 4:
+                        bias = bias.unsqueeze(dim=0)
+                    if verbose:
+                        print("\trectified bias size:", bias.size())
+                    output -= bias
             output = nn.functional.conv_transpose2d(
                 output,
                 weight=weight,
@@ -54,7 +68,7 @@ def perform_deconvolution(
             )
 
         if verbose:
-            print(f"\t\t> output.size :{output.size()} | min : {output.min().item():.3f} | max : {output.max().item()}")
+            print(f"\t> output.size :{output.size()} | min : {output.min().item():.3f} | max : {output.max().item()}")
 
     return output
 
@@ -69,6 +83,7 @@ def deconvolution(
         idx_map: Optional[int] = None,
         pos: Optional[Tuple[int, int]] = None,
         return_pos: bool = True,
+        deconv_device: str = "cpu",
         verbose: bool = False
         ) -> torch.Tensor|Tuple[torch.Tensor, torch.Tensor]:
     """
@@ -103,13 +118,16 @@ def deconvolution(
         f"i should be in [-{len(convnet_features)}; {len(convnet_features)}["
     
     # Generate feature maps and switch indices
-    output, switch_indices = wrapped_convnet.forward_for_deconv(
+    output_to_deconv, switch_indices = wrapped_convnet.forward_for_deconv(
         x, idx_layer, return_switch_indices=True, verbose=verbose
         )
+    if deconv_device == "cpu":
+        output_to_deconv = output_to_deconv.to("cpu").detach()
+        switch_indices = [(i, s_i.to("cpu").detach()) for i, s_i in switch_indices]
     
     if verbose:
-        print(f"forwarded output size {output.size()} | switch indices : {len(switch_indices)}", end="")
-        print(f" | min : {output.min().item()} | max : {output.max().item()}")
+        print(f"forwarded output size {output_to_deconv.size()} | switch indices : {len(switch_indices)}", end="")
+        print(f" | min : {output_to_deconv.min().item()} | max : {output_to_deconv.max().item()}")
 
     # Clean idx_map feature maps
     if clean_feature_map:
@@ -121,26 +139,24 @@ def deconvolution(
                 print("pool_indices.size", pool_indices.size())
 
         cleaned = clean_feature_maps(
-            output, idx_map=idx_map, pos=pos, pool_indices=pool_indices,
+            output_to_deconv, idx_map=idx_map, pos=pos, pool_indices=pool_indices,
             return_pos=return_pos, keep_only_last_occurrence=False
             )
-        
-        #if verbose:
-        #    print("cleaned", cleaned)
 
         if return_pos:
-            output, pos = cleaned
+            output_to_deconv, pos = cleaned
         else:
-            output = cleaned
+            output_to_deconv = cleaned
 
     # perform deconvnet
     deconv = perform_deconvolution(
-        output,
+        output_to_deconv,
         idx_layer,
         convnet_features,
         switch_indices,
         flip_kernels=flip_kernels,
         use_bias=use_bias,
+        deconv_device=deconv_device,
         verbose=verbose,
         )
 

@@ -12,12 +12,17 @@ class ConvnetWrapperForDeconvolution():
         self.convnet_features = features
         self.set_return_switch_indices(True)
     
+
     def to(self, device: torch.device) -> None:
         """
         Move all modules in self.convnet_layers to the specified device
         """
+        print(f"Moving wrapped model to {device}")
+
         self.wrapped_model.to(device)
+        self.convnet_features.to(device)
         self.features_to_device(device)
+
 
     def features_to_device(self, device):
         """
@@ -26,12 +31,14 @@ class ConvnetWrapperForDeconvolution():
         for m in self.convnet_features:
             m.to(device)
 
+
     def forward_through_features(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass through the "features" (convnet_layers) part of the model
         """
         x = self.convnet_features(x)
         return x
+
 
     def forward_for_deconv(self, 
                 x: torch.Tensor,
@@ -73,7 +80,7 @@ class ConvnetWrapperForDeconvolution():
                 x = m(x)
             
             if verbose:
-                print("\t ouput size:", x.size())
+                print("\t>ouput size:", x.size())
             
             if callback_output is not None:
                 callback_output(i, x)
@@ -87,9 +94,88 @@ class ConvnetWrapperForDeconvolution():
         else:
             return x
 
+
+    def get_topk_activations(self,
+                             x: torch.Tensor,
+                             idx_probed_layers: List[int],
+                             topk: int = 1,
+                             max_mode: str = "layer", #"layer" or "channel"
+                             device: str = "cpu",
+                             verbose: bool = False
+                             ) -> Dict[int, List[torch.Tensor]]:
+        """
+        Return topk activations at idx_probed_layers of each item of batch
+        Assuming x : (batch, chanel, height, width)
+        """
+
+        assert max_mode in ["layer", "channel"], f"max_mode should be 'layer' or 'channel', not {max_mode}"
+
+        probed_layers_norm_idx_map = {}
+
+        # Normalisation de chaque indice de couche, si négatif, et vérification de la cohérence
+        for i, idx in enumerate(idx_probed_layers):
+            idx_ = idx + len(self.convnet_features) if idx < 0 else idx
+            assert (0 <= idx_) and (idx_ < len(self.convnet_features)), \
+                f"idx[{i}] = {idx_} should be in [-{len(self.convnet_features)}; {len(self.convnet_features)}["
+            probed_layers_norm_idx_map[idx_] = idx
+
+        # Creating dict for activations
+        activations = {idx_layer:[] for idx_layer in idx_probed_layers}
+
+        sorted_idx_probed_layers = sorted(probed_layers_norm_idx_map)
+        idx_layer_max = sorted_idx_probed_layers[-1]
+
+        coord_in_layer = lambda i: [
+            i // (x.size(-2) * x.size(-1)), # chn
+            (i // x.size(-1)) % x.size(-2), # row
+            i % x.size(-1)                  # col
+            ]
+        coord_in_chanel = lambda i_ch, i: [i_ch, i //  x.size(-1), i %  x.size(-1)]
+
+
+        def callback_output(idx_layer: int, x: torch.Tensor) -> None:
+            if not idx_layer in probed_layers_norm_idx_map:
+                if verbose:
+                    print(f">(cbk) {idx_layer}")
+                return
+            
+            idx_probed_layer = probed_layers_norm_idx_map[idx_layer]
+            if verbose:
+                print(f">(cbk) norm : {idx_layer} --> initial {idx_probed_layer}")
+
+            if max_mode == "layer":
+                t_flat = torch.flatten(x, start_dim=1)
+                batch_values, batch_indices = t_flat.topk(topk, dim=1)
+                batch_indices = torch.tensor([[coord_in_layer(i.item()) for i in b] for b in batch_indices])
+            elif max_mode == "channel":
+                t_flat = torch.flatten(x, start_dim=2)
+                batch_values, batch_indices = t_flat.topk(topk, dim=2)
+                batch_indices = torch.tensor(
+                    [[[coord_in_chanel(i_ch, i.item()) for i in ch]
+                      for i_ch, ch in enumerate(b)] 
+                      for b in batch_indices])
+            else:
+                return 
+            
+            activations[idx_probed_layer].append(
+                (batch_values.to(device).detach(), batch_indices.to(device).detach())
+            )
+                    
+
+        x = self.forward_for_deconv(
+            x,
+            idx_layer_max,
+            callback_output=callback_output,
+            return_switch_indices=False,
+            verbose=verbose
+            )
+        return activations
+    
+
     def get_activations(self, 
                 x: torch.Tensor,
                 coord_activations: Dict[int, List[torch.Tensor]],
+                device="cpu",
                 verbose: bool = False
                 ) -> Dict[int, List[torch.Tensor]]:
         """
@@ -129,7 +215,7 @@ class ConvnetWrapperForDeconvolution():
         def callback_output(idx_layer: int, x: torch.Tensor) -> None:
             if not idx_layer in probed_layers_norm_idx_map:
                 if verbose:
-                    print(f">(cbk) norm : {idx_layer}")
+                    print(f">(cbk) {idx_layer}")
                 return
             
             idx_probed_layer = probed_layers_norm_idx_map[idx_layer]
@@ -141,10 +227,12 @@ class ConvnetWrapperForDeconvolution():
                     print("\tneuron_coord", neuron_coord)
                 chn, row, col = neuron_coord
                 # Get the activation value at the specified coordinates
-                activations[idx_probed_layer].append(x[:, chn, row, col].to("cpu").detach())
-                # activations[idx_layer] = x[*coord_activations[idx_layer].mT]
-                #if verbose:
-                #    print("activations", activations[idx_probed_layer])
+                activations[idx_probed_layer].append(x[:, chn, row, col].to(device).detach())
+                    
+            #activations[idx_layer] = x[*coord_activations[idx_layer].mT].to("cpu").detach()
+            #if verbose:
+                #    print("activations", activations[idx_probed_layer]) 
+                    
 
         x = self.forward_for_deconv(
             x,
@@ -154,6 +242,7 @@ class ConvnetWrapperForDeconvolution():
             verbose=verbose
             )
         return activations
+
 
     def set_return_switch_indices(self, return_indices: bool) -> None:
         """
