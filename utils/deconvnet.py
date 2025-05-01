@@ -104,7 +104,7 @@ def deconvolution(
         f"i should be in [-{len(cnn_features)}; {len(cnn_features)}["
     
     # Generate feature maps and switch indices
-    output, switch_indices = cnn_model(x, idx_layer, verbose)
+    output, switch_indices = cnn_model.forward_for_deconv(x, idx_layer, verbose)
     if verbose:
         print("forwarded output.size", output.size(), "len(switch_indices)", len(switch_indices))
         print(output.min().item(), output.max().item())

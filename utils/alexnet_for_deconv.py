@@ -16,6 +16,9 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
     
 
     def features_to_device(self, device):
+        """
+        Move all modules in self.features to the specified device
+        """
         for m in self.features:
             m.to(device)
     
@@ -30,7 +33,7 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
 
         Args:
             x (tensor): input for forward
-            idx_stop (int, optional): indice of the module from which to get the ouput, if set
+            idx_layer (int, optional): indice of the module from which to get the ouput, if set
 
         Returns:
             
@@ -65,9 +68,20 @@ class AlexNetForDeconv(torchvision.models.AlexNet):
     def get_max_activations(self,
                             top_n: int = 1,
                             idx_layer_set: int|List[int] = -1 
-                            ) -> Dict[int, Tuple[torch.tensor, torch.tensor]]: 
+                            ) -> Dict[int, Tuple[torch.tensor, torch.tensor]]:
+        """
+        Get the top_n activations of each layer in idx_layer_set
+        Args:
+            top_n (int): number of max activations to get
+            idx_layer_set (int|List[int]): layer index or list of layer indices to get the activations from
+        Returns:
+            activations (Dict[int, Tuple[torch.tensor, torch.tensor]]): dictionary of activations for each layer in idx_layer_set
+                key: layer index
+                value: tuple of (activations, indices)
+        """
         if type(idx_layer_set) == int:
             idx_layer_set = [idx_layer_set]
+            
         idx_layer_set_ = {}
         for i, idx in enumerate(idx_layer_set):
             idx_ = idx + len(self.features) if idx < 0 else idx
