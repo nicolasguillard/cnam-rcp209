@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms as T
 from torchvision.io import decode_image
 from PIL import Image
-from imagenet_labels import imagenet1K_codes_to_labels, imagenet1K_labels_to_names
+from imagenet_labels import imagenet1K_codes_to_labels, imagenet1K_labels_to_names, imagenet1K_labels_to_codes, imagebet1K_val_groundtruth_labels
 
 __version__ = "1.3.1"
 
@@ -32,9 +32,8 @@ DATASET_1 = {  # 50K images for evaluation
     "path": "/Users/me/Documents/Work/Dev/_data/imagenet_val_images",
     "mounted_path": "/Volumes/me/Documents/Work/Dev/_data/imagenet_val_images",
     "size": 50000,
-    ##TODO To process
-    "means": [],
-    "stds": [],
+    "means": imagenet_mean,
+    "stds": imagenet_std
 }
 
 DATASET_2 = { # 1K images - 1K classes catalog label code <-> label name
@@ -42,14 +41,23 @@ DATASET_2 = { # 1K images - 1K classes catalog label code <-> label name
     "path": "/Users/me/Documents/Work/Dev/_data/imagenet-sample-images-master",
     "mounted_path": "/Volumes/me/Documents/Work/Dev/_data/imagenet-sample-images-master",
     "size": 1000,
-    "means": [0.49069777, 0.4582515, 0.40877318],
-    "stds": [0.26863366, 0.26152524, 0.2731904 ]
+    "means": imagenet_mean,
+    "stds": imagenet_std
 }
-                     
 
-def get_label_code_from_filename(filename: str, datapath: str) -> str:
+DATASET_3 = { # 1K images - 1K classes catalog label code <-> label name
+    "name": "ILSVRC2012_img_val",
+    "path": "/Users/me/Documents/Work/Dev/_data/ILSVRC2012_img_val",
+    "mounted_path": "/Volumes/me/Documents/Work/Dev/_data/ILSVRC2012_img_val",
+    "size": 50000,
+    "means": imagenet_mean,
+    "stds": imagenet_std
+}
+
+
+def get_label_code_from_filename(filename: str, dataset_name: str) -> str:
     """
-    Get the label code from the filename
+    Get the label code from the filename if presents
 
     Args:
         filename (str): filename
@@ -57,17 +65,41 @@ def get_label_code_from_filename(filename: str, datapath: str) -> str:
     Returns:
         str: label code
     """
-    if datapath == DATASET_0["path"]:
+    if dataset_name == DATASET_0["name"]:
         return None
-    elif datapath == DATASET_1["path"]:
+    elif dataset_name == DATASET_1["name"]:
         m = re.match(r"^[^_]+_[^_]+_[^_]+_([^.]+)\.JPEG$", filename)
-        return m.group(1)
-    elif datapath == DATASET_2["path"]:
+    elif dataset_name == DATASET_2["name"]:
         m = re.match(r"^([^_]+)_([^.]+)\.JPEG$", filename)
-        return m.group(1)
+    else:
+        return None
+
+    return m.group(1)
 
 
-def get_label_data_from_filename(filename: str, datapath: str) -> Tuple[str, int, str]:
+def get_file_number_from_filename(filename: str, dataset_name: str) -> int:
+        """
+        Get the idx file from the filename if presents
+
+        Args:
+            filename (str): filename
+            datapath (str): path to the dataset 
+        Returns:
+            str: idx file
+        """
+        if dataset_name == DATASET_1["name"]:
+            m = re.match(r"^[^_]+_[^_]+_([^_]+)_[^.]+\.JPEG$", filename)
+        if dataset_name == DATASET_3["name"]:
+            m = re.match(r"^ILSVRC2012_val_([^.]+)\.JPEG$", filename)
+        else:
+            return None
+        
+        if m is None:
+            raise ValueError(f"Invalid filename format: {filename}")
+        return int(m.group(1))
+
+
+def get_label_data_from_filename(filename: str, dataset_name: str) -> Tuple[str, int, str]:
     """
     Return name from filename, or (name, label) regarding a name to label dictionnary
 
@@ -78,9 +110,15 @@ def get_label_data_from_filename(filename: str, datapath: str) -> Tuple[str, int
     Returns:
         str|Tuple[str, int, str]: (code, label, name)
     """
-    label_code = get_label_code_from_filename(filename, datapath)
-    label_idx = imagenet1K_codes_to_labels.get(label_code, None)
-    label_name = imagenet1K_labels_to_names.get(label_idx, None)
+    if dataset_name == DATASET_3["name"] or dataset_name == DATASET_1["name"]:
+        file_number = get_file_number_from_filename(filename, dataset_name)
+        label_idx = imagebet1K_val_groundtruth_labels.get(file_number, None)
+        label_code = imagenet1K_labels_to_codes.get(label_idx, None)
+        label_name = imagenet1K_labels_to_names.get(label_idx, None)
+    else:
+        label_code = get_label_code_from_filename(filename, dataset_name)
+        label_idx = imagenet1K_codes_to_labels.get(label_code, None)
+        label_name = imagenet1K_labels_to_names.get(label_idx, None)
 
     return label_code, label_idx, label_name
 
@@ -104,7 +142,7 @@ def get_file_with_label_code(label_code: str, directory: str) -> str:
     return matched_files
 
 
-def get_image_title(filename, datapath):
+def get_image_title(filename, dataset_name):
     """
     Get the title of the image from the filename
     Args:
@@ -114,12 +152,14 @@ def get_image_title(filename, datapath):
     Returns:
         str: title of the image
     """
-    if datapath == DATASET_0["path"]:
+    if dataset_name == DATASET_0["name"]:
         return filename.replace(".JPEG", "")
-    elif datapath == DATASET_1["path"]:
+    elif dataset_name == DATASET_1["name"]:
         return filename.replace("ILSVRC2012_val_", "").replace(".JPEG", "")
-    elif datapath == DATASET_2["path"]:
+    elif dataset_name == DATASET_2["name"]:
         return filename.replace(".JPEG", "")
+    elif dataset_name == DATASET_1["name"]:
+        return filename.replace("ILSVRC2012_val_", "").replace(".JPEG", "")
     
 
 class CustomImageDataset(Dataset):
@@ -186,7 +226,7 @@ class CustomImageDataset(Dataset):
         return [self.files[i] for i in list_idx]
 
     def _get_image_with_torchvision(self, img_path: str, to_rgb: bool = True) -> torch.Tensor:
-        image = decode_image(img_path)
+        image = decode_image(img_path, mode="RGB")
         # If the image is not a RGB but a 1 channel grey
         if to_rgb and image.size(0) == 1:
             #Create 3 same channels
@@ -195,7 +235,7 @@ class CustomImageDataset(Dataset):
         return image
     
     def _get_image_with_pil(self, img_path: str, to_rgb: bool = True) -> torch.Tensor:
-        image = Image.open(img_path)
+        image = Image.open(img_path).convert("RGB")
         if to_rgb and len(image.getbands()) == 1:
             image_mono = image.convert("L")
             image = Image.merge("RGB", (image_mono, image_mono, image_mono))
@@ -217,7 +257,11 @@ class CustomImageDataset(Dataset):
         elif self.read_image_with.lower() == "pil":
             image = self._get_image_with_pil(img_path, to_rgb=to_rgb)
 
-        image_trfm = self.transform(image) if self.transform else None
+        try:
+            image_trfm = self.transform(image) if self.transform else None
+        except Exception as e:
+            print(f"Error while transforming image {name} ({idx}): {e}")
+            image, image_trfm = None, None
 
         return image, image_trfm
 
@@ -229,33 +273,33 @@ if __name__ == "__main__":
     # -- Test of get_label_code_from_filename --
     tests = [
         {
-            "dataset_path": DATASET_1["path"],
+            "dataset_name": DATASET_1["name"],
             "filename": "ILSVRC2012_val_00000026_n04380533.JPEG",
             "expected": "n04380533"
         },
         {
-            "dataset_path": DATASET_1["path"],
+            "dataset_name": DATASET_1["name"],
             "filename": "ILSVRC2012_val_00000152_n03710193.JPEG",
             "expected": "n03710193"
         },
         {
-            "dataset_path": DATASET_2["path"],
+            "dataset_name": DATASET_2["name"],
             "filename": "n02089078_black-and-tan_coonhound.JPEG",
             "expected": "n02089078"
         },
         {
-            "dataset_path": DATASET_2["path"],
+            "dataset_name": DATASET_2["name"],
             "filename": "n02395406_hog.JPEG",
             "expected": "n02395406"
         },
     ]
 
     for test in tests:
-        dataset_path = test["dataset_path"]
+        dataset_name = test["dataset_name"]
         filename = test["filename"]
         expected = test["expected"]
-        result = get_label_code_from_filename(filename, dataset_path)
-        assert result == expected, f"Expected {expected}, but got {result} for {filename} in {dataset_path}"
+        result = get_label_code_from_filename(filename, dataset_name)
+        assert result == expected, f"Expected {expected}, but got {result} for {filename} in {dataset_name}"
     print("-- Tests of get_label_code_from_filename() passed")
 
     # -- Test of get_label_data_from_filename --
@@ -3270,7 +3314,7 @@ if __name__ == "__main__":
     
     for filename, expected_code, expected_name in zip(filenames, expected_codes, expected_names):
         expected_label = imagenet1K_codes_to_labels[expected_code]
-        code, label, name = get_label_data_from_filename(filename, DATASET_2["path"])
+        code, label, name = get_label_data_from_filename(filename, DATASET_2["name"])
         assert code == expected_code and label == expected_label and name == expected_name, \
             f"Problème avec {filename}, obtenant ({code, label, name}) au lieu ({expected_code, expected_label, expected_name})"
     print("-- Tests of get_label_data_from_filename() passed")

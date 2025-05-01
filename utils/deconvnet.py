@@ -57,8 +57,8 @@ class Deconvnet(nn.Module):
                     conv.weight.copy_(torch.flip(weight, [2, 3]) if self.flip_kernels else weight)
 
                     if self.use_bias and module.bias != None:
-                        bias = module.bias.clone().to("cpu").unsqueeze(dim=0).unsqueeze(dim=0).reshape(module.bias.size(0), 1, 1).unsqueeze(dim=0)
-                        self.deconv_model.append(nn.Sequential([Sub(bias), conv])) # In order to preserve layer mapping with wrapped_convnet features part
+                        bias = module.bias.clone().to("cpu").unsqueeze(dim=0).unsqueeze(dim=0).reshape(module.bias.size(0), 1, 1) #.unsqueeze(dim=0)
+                        self.deconv_model.append(nn.Sequential(Sub(bias), conv)) # In order to preserve layer mapping with wrapped_convnet features part
                     else:
                         self.deconv_model.append(conv)
                     

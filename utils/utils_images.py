@@ -84,7 +84,7 @@ def display_images_tensor_grid(
     for r in range(rows):
         for c in range(per_rows):
             i = r * per_rows + c
-            if i < rows:
+            if i < len(images):
                 ax = fig.add_subplot(rows, per_rows, i+1, xticks = [], yticks = [])
                 if titles:
                     ax.set_title(titles[i])
@@ -92,10 +92,10 @@ def display_images_tensor_grid(
                     ax.imshow(images[i].numpy().transpose(1, 2, 0), cmap='gray')
                 else:
                     ax.imshow(images[i].numpy().transpose(1, 2, 0))
+                ax.margins(0, 0)
     if suptitle:
         plt.suptitle(suptitle)
-    #plt.tight_layout()
-    #plt.subplots_adjust(hspace=1)
+
     plt.show()
 
 
@@ -106,7 +106,7 @@ def display_images_list_grid(
     title: str = "",
     figsize: Tuple[int, int] = (12, 12),
     no_plt_show: bool = False,
-    ) -> None:
+    ) -> None|Tuple[plt.Figure, plt.Axes]:
     rows = len(images) // per_rows
     fig, axs = plt.subplots(rows, per_rows, figsize=figsize, layout='constrained')
     for i, image in enumerate(images):
