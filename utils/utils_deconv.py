@@ -20,7 +20,7 @@ def make_coherent_before_max_unpool2d(tensor:torch.tensor, pool_indices:torch.te
         tensor = tensor.unsqueeze(dim=0)
         pool_indices = pool_indices.unsqueeze(dim=0)
     
-    tensor_coherent = torch.zeros_like(tensor)
+    tensor_coherent = torch.zeros_like(tensor, device=tensor.device)
     for i_b, (b, p_i_b) in enumerate(zip(tensor, pool_indices)):
         for i_ch, (ch, p_i_ch) in enumerate(zip(b, p_i_b)):
             elts = torch.unique(p_i_ch)

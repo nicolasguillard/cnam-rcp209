@@ -34,7 +34,7 @@ DATASET_1 = {  # 50K images for evaluation
     "size": 50000,
     ##TODO To process
     "means": [],
-    "stds": []
+    "stds": [],
 }
 
 DATASET_2 = { # 1K images - 1K classes catalog label code <-> label name
@@ -45,7 +45,6 @@ DATASET_2 = { # 1K images - 1K classes catalog label code <-> label name
     "means": [0.49069777, 0.4582515, 0.40877318],
     "stds": [0.26863366, 0.26152524, 0.2731904 ]
 }
-
                      
 
 def get_label_code_from_filename(filename: str, datapath: str) -> str:

@@ -109,7 +109,7 @@ def deconvolution(
     
     if verbose:
         print(f"forwarded output size {output.size()} | switch indices : {len(switch_indices)}", end="")
-        print(f" | min : {output.min().item()} •| max : {output.max().item()}")
+        print(f" | min : {output.min().item()} | max : {output.max().item()}")
 
     # Clean idx_map feature maps
     if clean_feature_map:
